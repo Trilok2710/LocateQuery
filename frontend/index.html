@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Locate My Query</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 40px auto; }
+    #searchBtn { background: #1976d2; color: #fff; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; }
+    #searchBtn:hover { background: #1565c0; }
+    #result { margin-top: 24px; }
+    img { max-width: 100%; margin-top: 8px; }
+    pre { background: #f5f5f5; padding: 8px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h2>Locate My Query</h2>
+  <input id="query" type="text" placeholder="Enter your query..." style="width:70%;padding:8px;" />
+  <button id="searchBtn">Search</button>
+  <div id="result"></div>
+  <script>
+    document.getElementById('searchBtn').onclick = async function() {
+      const query = document.getElementById('query').value;
+      document.getElementById('result').innerHTML = "Searching...";
+      const res = await fetch('http://localhost:1100/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      });
+      const data = await res.json();
+      if (data.result === "insufficient_info") {
+        document.getElementById('result').innerHTML = "<b>No confident match found.</b>";
+      } else {
+        document.getElementById('result').innerHTML = data.results.map(r => `
+          <div>
+            <b>Page:</b> ${r.page_no}<br>
+            <b>Box-Coordinates:</b>
+            <span>
+            X: ${r.bounding_box.top_left_x},&nbsp;
+            Y: ${r.bounding_box.top_left_y},&nbsp;
+            W: ${r.bounding_box.width},&nbsp;
+            H: ${r.bounding_box.height}
+            </span><br>
+            ${r.image_url ? `<img src="${r.image_url}" alt="result" />` : ""}
+            <b>Caption:</b> ${r.caption || "N/A"}<br>
+            <b>Score:</b> ${r.score.toFixed(3)}<br>
+            <b>Context:</b> <pre>${r.context.slice(0, 200)}...</pre>
+          </div>
+          <hr>
+        `).join('');
+      }
+    };
+  </script>
+</body>
+</html>
